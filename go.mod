@@ -1,4 +1,4 @@
-module example-go-api
+module github.com/raksit31667/example-go-api
 
 go 1.22.2
 
