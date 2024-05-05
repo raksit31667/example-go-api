@@ -2,18 +2,14 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/labstack/echo/v4"
 	"github.com/raksit31667/example-go-api/config"
+	"github.com/raksit31667/example-go-api/router"
 )
 
 func main() {
 	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
-
+	router.RegisterRoutes(e)
 	osGetter := &config.OsEnvGetter{}
 	configProvider := config.ConfigProvider{Getter: osGetter}
 	config := configProvider.GetConfig()
