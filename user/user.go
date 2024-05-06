@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const createUserQuery = "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id;"
+const createUserQuery = `INSERT INTO "user" (name, email) VALUES ($1, $2) RETURNING id;`
 
 type User struct {
 	ID    int    `json:"id"`
@@ -31,7 +31,7 @@ type handler struct {
 	db *sql.DB
 }
 
-func New(db *sql.DB) *handler {
+func NewHandler(db *sql.DB) *handler {
 	return &handler{db}
 }
 
@@ -49,7 +49,10 @@ func (handler *handler) Create(c echo.Context) error {
 
 	context := c.Request().Context()
 	var lastInsertId int
-	handler.db.QueryRowContext(context, createUserQuery, user.Name, user.Email).Scan(&lastInsertId)
+	err := handler.db.QueryRowContext(context, createUserQuery, user.Name, user.Email).Scan(&lastInsertId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
 	user.ID = lastInsertId
 	return c.JSON(http.StatusCreated, user)
 }

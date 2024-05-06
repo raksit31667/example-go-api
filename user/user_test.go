@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +28,7 @@ func TestCreateUser(t *testing.T) {
 
 		row := sqlmock.NewRows([]string{"id"}).AddRow(1)
 		mock.ExpectQuery(createUserQuery).WithArgs("raksit", "raksit.m@ku.th").WillReturnRows(row)
-		handler := New(db)
+		handler := NewHandler(db)
 		err := handler.Create(c)
 
 		if err != nil {
@@ -50,13 +51,13 @@ func TestCreateUser(t *testing.T) {
 		response := httptest.NewRecorder()
 		c := e.NewContext(request, response)
 
-		handler := New(nil)
+		handler := NewHandler(nil)
 		err := handler.Create(c)
 
 		if err != nil {
 			t.Errorf("expected no error but got %v", err)
 		}
-		
+
 		assertResponseCode(t, response.Code, http.StatusBadRequest)
 	})
 
@@ -68,7 +69,7 @@ func TestCreateUser(t *testing.T) {
 		response := httptest.NewRecorder()
 		c := e.NewContext(request, response)
 
-		handler := New(nil)
+		handler := NewHandler(nil)
 		err := handler.Create(c)
 
 		if err != nil {
@@ -76,6 +77,28 @@ func TestCreateUser(t *testing.T) {
 		}
 
 		assertResponseCode(t, response.Code, http.StatusBadRequest)
+	})
+
+	t.Run("create user given error during query", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name": "raksit", "email": "raksit.m@ku.th"}`))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		mock.ExpectQuery(createUserQuery).WithArgs("raksit", "raksit.m@ku.th").WillReturnError(errors.New("query error"))
+		handler := NewHandler(db)
+		err := handler.Create(c)
+
+		if err != nil {
+			t.Errorf("expected no error but got %v", err)
+		}
+
+		assertResponseCode(t, response.Code, http.StatusInternalServerError)
 	})
 }
 
