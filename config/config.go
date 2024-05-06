@@ -24,8 +24,9 @@ type Config struct {
 }
 
 type Server struct {
-	Hostname string
-	Port     int
+	Hostname           string
+	Port               int
+	DBConnectionString string
 }
 
 func (c *ConfigProvider) GetStringEnv(key string, defaultValue string) string {
@@ -63,8 +64,9 @@ func (c *ConfigProvider) GetBoolEnv(key string, defaultValue bool) bool {
 func (c *ConfigProvider) GetConfig() Config {
 	return Config{
 		Server: Server{
-			Hostname: c.GetStringEnv("HOSTNAME", "localhost"),
-			Port:     c.GetIntEnv("PORT", 1323),
+			Hostname:           c.GetStringEnv("HOSTNAME", "localhost"),
+			Port:               c.GetIntEnv("PORT", 1323),
+			DBConnectionString: c.GetStringEnv("DB_CONNECTION_STRING", ""),
 		},
 	}
 }
