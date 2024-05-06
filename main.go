@@ -12,15 +12,15 @@ import (
 
 func main() {
 	e := echo.New()
-	router.RegisterRoutes(e)
 	osGetter := &config.OsEnvGetter{}
 	configProvider := config.ConfigProvider{Getter: osGetter}
 	config := configProvider.GetConfig()
-
-	_, err := sql.Open("postgres", config.Server.DBConnectionString)
+	
+	db, err := sql.Open("postgres", config.Server.DBConnectionString)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
+	router.RegisterRoutes(e, db)
 
 	address := fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port)
 	e.Logger.Fatal(e.Start(address))
