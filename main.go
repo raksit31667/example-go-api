@@ -12,18 +12,26 @@ import (
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 	"github.com/raksit31667/example-go-api/config"
+	"github.com/raksit31667/example-go-api/middleware"
 	"github.com/raksit31667/example-go-api/router"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
 	e := echo.New()
+	e.Use(middleware.LogMiddleware(logger))
 	osGetter := &config.OsEnvGetter{}
 	configProvider := config.ConfigProvider{Getter: osGetter}
 	config := configProvider.GetConfig()
-	
+
 	db, err := sql.Open("postgres", config.Server.DBConnectionString)
 	if err != nil {
-		e.Logger.Fatal(err)
+		logger.Fatal("failed to open database connection", zap.Error(err))
 	}
 	router.RegisterRoutes(e, db)
 	address := fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port)
@@ -31,16 +39,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	go func() {		
+	go func() {
 		if err := e.Start(address); err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatal(err)
+			logger.Fatal("failed to start server", zap.Error(err))
 		}
 	}()
-	
+
 	<-ctx.Done()
-	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := e.Shutdown(ctx); err != nil {
-		e.Logger.Fatal(err)
+		logger.Fatal("failed to shutdown server", zap.Error(err))
 	}
 }
