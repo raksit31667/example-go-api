@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/labstack/echo/v4"
 )
@@ -39,6 +40,42 @@ func TestCreateUser(t *testing.T) {
 		gotUser := getUserFromResponse(t, response.Body)
 
 		assertUserResponse(t, gotUser, wantedUser)
+	})
+
+	t.Run("create user given invalid user", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name": "raksit"}`))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		handler := New(nil)
+		err := handler.Create(c)
+
+		if err != nil {
+			t.Errorf("expected no error but got %v", err)
+		}
+		
+		assertResponseCode(t, response.Code, http.StatusBadRequest)
+	})
+
+	t.Run("create user given error during user binding", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(``))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		handler := New(nil)
+		err := handler.Create(c)
+
+		if err != nil {
+			t.Errorf("expected no error but got %v", err)
+		}
+
+		assertResponseCode(t, response.Code, http.StatusBadRequest)
 	})
 }
 
