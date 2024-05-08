@@ -63,3 +63,21 @@ func (handler *handler) Create(c echo.Context) error {
 	logger.Info("user created", zap.Any("user", user))
 	return c.JSON(http.StatusCreated, user)
 }
+
+func (handler *handler) GetAll(c echo.Context) error {
+	context := c.Request().Context()
+	rows, err := handler.db.QueryContext(context, `SELECT id, name, email FROM "user"`)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		user := User{}
+		rows.Scan(&user.ID, &user.Name, &user.Email)
+		users = append(users, user)
+	}
+
+	return c.JSON(http.StatusOK, users)
+}

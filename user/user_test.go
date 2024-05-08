@@ -31,16 +31,15 @@ func TestCreateUser(t *testing.T) {
 		handler := NewHandler(db)
 		err := handler.Create(c)
 
-		if err != nil {
-			t.Errorf("expected no error but got %v", err)
-		}
-
+		assertNoError(t, err)
 		assertResponseCode(t, response.Code, http.StatusCreated)
 
-		wantedUser := User{ID: 1, Name: "raksit", Email: "raksit.m@ku.th"}
-		gotUser := getUserFromResponse(t, response.Body)
+		want := User{ID: 1, Name: "raksit", Email: "raksit.m@ku.th"}
+		got := getUserFromResponse(t, response.Body)
 
-		assertUserResponse(t, gotUser, wantedUser)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v but want %v", got, want)
+		}
 	})
 
 	t.Run("create user given invalid user", func(t *testing.T) {
@@ -54,10 +53,7 @@ func TestCreateUser(t *testing.T) {
 		handler := NewHandler(nil)
 		err := handler.Create(c)
 
-		if err != nil {
-			t.Errorf("expected no error but got %v", err)
-		}
-
+		assertNoError(t, err)
 		assertResponseCode(t, response.Code, http.StatusBadRequest)
 	})
 
@@ -72,10 +68,7 @@ func TestCreateUser(t *testing.T) {
 		handler := NewHandler(nil)
 		err := handler.Create(c)
 
-		if err != nil {
-			t.Errorf("expected no error but got %v", err)
-		}
-
+		assertNoError(t, err)
 		assertResponseCode(t, response.Code, http.StatusBadRequest)
 	})
 
@@ -94,10 +87,59 @@ func TestCreateUser(t *testing.T) {
 		handler := NewHandler(db)
 		err := handler.Create(c)
 
-		if err != nil {
-			t.Errorf("expected no error but got %v", err)
-		}
+		assertNoError(t, err)
+		assertResponseCode(t, response.Code, http.StatusInternalServerError)
+	})
+}
 
+func TestGetAllUsers(t *testing.T) {
+	t.Run("get all users given users exist in the database", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		rows := sqlmock.NewRows([]string{"id", "name", "email"})
+		rows.AddRow(1, "raksit", "raksit.m@ku.th")
+		rows.AddRow(2, "earth", "rak-sit@hotmail.com")
+		mock.ExpectQuery(`SELECT id, name, email FROM "user"`).WillReturnRows(rows)
+
+		handler := NewHandler(db)
+		err := handler.GetAll(c)
+
+		assertNoError(t, err)
+		assertResponseCode(t, response.Code, http.StatusOK)
+
+		want := []User{
+			{ID: 1, Name: "raksit", Email: "raksit.m@ku.th"},
+			{ID: 2, Name: "earth", Email: "rak-sit@hotmail.com"},
+		}
+		got := getUsersFromResponse(t, response.Body)
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v but want %v", got, want)
+		}
+	})
+
+	t.Run("get all users given error during query", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		mock.ExpectQuery(`SELECT id, name, email FROM "user"`).WillReturnError(errors.New("query error"))
+		handler := NewHandler(db)
+		err := handler.GetAll(c)
+
+		assertNoError(t, err)
 		assertResponseCode(t, response.Code, http.StatusInternalServerError)
 	})
 }
@@ -110,16 +152,25 @@ func getUserFromResponse(t testing.TB, body io.Reader) (user User) {
 	return
 }
 
+func getUsersFromResponse(t testing.TB, body io.Reader) (users []User) {
+	t.Helper()
+	
+	if err := json.NewDecoder(body).Decode(&users); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	return
+}
+
+func assertNoError(t testing.TB, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+}
+
 func assertResponseCode(t testing.TB, got, want int) {
 	t.Helper()
 	if got != want {
 		t.Errorf("got status code %d but want %d", got, want)
-	}
-}
-
-func assertUserResponse(t testing.TB, got, want User) {
-	t.Helper()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v but want %v", got, want)
 	}
 }
