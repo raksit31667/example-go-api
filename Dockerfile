@@ -5,7 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod tidy
 
-COPY *.go ./
+COPY . .
 
 # Enabling cgo (CGO_ENABLED=1) often leads to larger binaries. 
 # This increase in size is attributed to the overhead introduced by bridging Go and C code
