@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/labstack/echo/v4"
@@ -55,6 +56,32 @@ func TestLogMiddleware(t *testing.T) {
 		}
 		if got[spanIDLogField] == "" {
 			t.Error("expected span-id in log context but got none")
+		}
+	})
+}
+
+func TestGetLogger(t *testing.T) {
+	t.Run("should return defined logger given logger context is set", func(t *testing.T) {
+		logger, _ := zap.NewProduction()
+		e := echo.New()
+		c := e.NewContext(nil, nil)
+		c.Set(loggerContextKey, logger)
+
+		got := GetLogger(c)
+
+		if !reflect.DeepEqual(got, logger) {
+			t.Errorf("expected logger to be %v but got %v", logger, got)
+		}
+	})
+	t.Run("should return default no-op logger given logger context is not set", func(t *testing.T) {
+		e := echo.New()
+		c := e.NewContext(nil, nil)
+
+		got := GetLogger(c)
+		want := zap.NewNop()
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("expected logger to be %v but got %v", want, got)
 		}
 	})
 }

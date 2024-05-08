@@ -13,7 +13,12 @@ const (
 )
 
 func GetLogger(c echo.Context) *zap.Logger {
-	return c.Get(loggerContextKey).(*zap.Logger)
+	switch logger:= c.Get(loggerContextKey).(type) {
+	case *zap.Logger:
+		return logger
+	default:
+		return zap.NewNop()
+	}
 }
 
 func LogMiddleware(logger *zap.Logger) echo.MiddlewareFunc {
