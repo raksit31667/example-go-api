@@ -20,7 +20,7 @@ jobs:
 
       - name: Set up Git SHA
         run: echo "GIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:

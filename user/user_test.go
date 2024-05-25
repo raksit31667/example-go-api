@@ -154,7 +154,7 @@ func getUserFromResponse(t testing.TB, body io.Reader) (user User) {
 
 func getUsersFromResponse(t testing.TB, body io.Reader) (users []User) {
 	t.Helper()
-	
+
 	if err := json.NewDecoder(body).Decode(&users); err != nil {
 		t.Fatalf("failed to decode response body: %v", err)
 	}
