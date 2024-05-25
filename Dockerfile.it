@@ -1,0 +1,20 @@
+FROM golang:1.22.3-alpine AS builder
+
+WORKDIR /go/src
+
+COPY go.mod go.sum ./
+
+RUN CGO_ENABLED=0 go mod download
+
+# Download and install goose (database migration tool)
+RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@v3.2.0
+
+FROM golang:1.22.3-alpine AS runtime
+
+COPY --from=builder /go/pkg /go/pkg
+COPY --from=builder /go/bin /go/bin
+
+WORKDIR /go/src
+
+# Run database migration and tests
+CMD goose -dir db postgres ${DB_CONNECTION_STRING} up && CGO_ENABLED=0 go test -v -run "Test.*IT" -tags=integration ./...
