@@ -1,0 +1,12 @@
+default_stages: [push]
+repos:
+  - repo: local
+    hooks:
+      - id: go-integration-test
+        name: Run integration test
+        entry: make integration-test
+        language: system
+        pass_filenames: false
+        always_run: true
+        verbose: true
+        fail_fast: true
