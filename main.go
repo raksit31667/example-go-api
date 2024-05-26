@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/raksit31667/example-go-api/config"
 	"github.com/raksit31667/example-go-api/middleware"
+	"github.com/raksit31667/example-go-api/migration"
 	"github.com/raksit31667/example-go-api/router"
 	"go.uber.org/zap"
 )
@@ -33,6 +34,12 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to open database connection", zap.Error(err))
 	}
+	if config.Environment == "local" {
+		if err := migration.ApplyMigrations(db); err != nil {
+			logger.Fatal("failed to apply migrations", zap.Error(err))
+		}
+	}
+
 	router.RegisterRoutes(e, db)
 	address := fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port)
 

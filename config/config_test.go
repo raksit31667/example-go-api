@@ -115,6 +115,7 @@ func TestGetBoolEnv(t *testing.T) {
 func TestGetConfig(t *testing.T) {
 	t.Run("get server given keys exist", func(t *testing.T) {
 		envGetter := StubEnvGetter{
+			"ENVIRONMENT":		   "production",
 			"HOSTNAME":             "127.0.0.1",
 			"PORT":                 "5000",
 			"DB_CONNECTION_STRING": "db://localhost:5432",
@@ -124,7 +125,8 @@ func TestGetConfig(t *testing.T) {
 
 		got := config
 		want := Config{
-			Server{
+			Environment: "production",
+			Server: Server{
 				Hostname:           "127.0.0.1",
 				Port:               5000,
 				DBConnectionString: "db://localhost:5432",
@@ -143,7 +145,8 @@ func TestGetConfig(t *testing.T) {
 
 		got := config
 		want := Config{
-			Server{
+			Environment: "local",
+			Server: Server{
 				Hostname:           "localhost",
 				Port:               1323,
 				DBConnectionString: "",

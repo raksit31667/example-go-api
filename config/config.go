@@ -20,6 +20,7 @@ type ConfigProvider struct {
 }
 
 type Config struct {
+	Environment string
 	Server Server
 }
 
@@ -63,6 +64,7 @@ func (c *ConfigProvider) GetBoolEnv(key string, defaultValue bool) bool {
 
 func (c *ConfigProvider) GetConfig() Config {
 	return Config{
+		Environment: c.GetStringEnv("ENVIRONMENT", "local"),
 		Server: Server{
 			Hostname:           c.GetStringEnv("HOSTNAME", "localhost"),
 			Port:               c.GetIntEnv("PORT", 1323),
