@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -106,7 +107,7 @@ func TestGetAllUsers(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"id", "name", "email"})
 		rows.AddRow(1, "raksit", "raksit.m@ku.th")
 		rows.AddRow(2, "earth", "rak-sit@hotmail.com")
-		mock.ExpectQuery(`SELECT id, name, email FROM "user"`).WillReturnRows(rows)
+		mock.ExpectQuery(getAllUsersQuery).WillReturnRows(rows)
 
 		handler := NewHandler(db)
 		err := handler.GetAll(c)
@@ -135,9 +136,86 @@ func TestGetAllUsers(t *testing.T) {
 		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		defer db.Close()
 
-		mock.ExpectQuery(`SELECT id, name, email FROM "user"`).WillReturnError(errors.New("query error"))
+		mock.ExpectQuery(getAllUsersQuery).WillReturnError(errors.New("query error"))
 		handler := NewHandler(db)
 		err := handler.GetAll(c)
+
+		assertNoError(t, err)
+		assertResponseCode(t, response.Code, http.StatusInternalServerError)
+	})
+}
+
+func TestGetUserById(t *testing.T) {
+	t.Run("get user by id given a user exists in the database", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/users/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("2")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		row := sqlmock.NewRows([]string{"id", "name", "email"})
+		row.AddRow(2, "earth", "rak-sit@hotmail.com")
+		mock.ExpectQuery(getByIdQuery).WithArgs("2").WillReturnRows(row)
+
+		handler := NewHandler(db)
+		err := handler.GetById(c)
+
+		assertNoError(t, err)
+		assertResponseCode(t, response.Code, http.StatusOK)
+
+		want := User{
+			ID: 2, Name: "earth", Email: "rak-sit@hotmail.com",
+		}
+		got := getUserFromResponse(t, response.Body)
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v but want %v", got, want)
+		}
+	})
+
+	t.Run("get user by id given user does not exist", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/users/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		mock.ExpectQuery(getByIdQuery).WithArgs("1").WillReturnError(sql.ErrNoRows)
+		handler := NewHandler(db)
+		err := handler.GetById(c)
+
+		assertNoError(t, err)
+		assertResponseCode(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("get user by id given error during query", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/users/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		mock.ExpectQuery(getByIdQuery).WithArgs("1").WillReturnError(errors.New("query error"))
+		handler := NewHandler(db)
+		err := handler.GetById(c)
 
 		assertNoError(t, err)
 		assertResponseCode(t, response.Code, http.StatusInternalServerError)

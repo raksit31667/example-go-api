@@ -10,7 +10,11 @@ import (
 	"go.uber.org/zap"
 )
 
-const createUserQuery = `INSERT INTO "user" (name, email) VALUES ($1, $2) RETURNING id;`
+const (
+	createUserQuery = `INSERT INTO "user" (name, email) VALUES ($1, $2) RETURNING id;`
+	getAllUsersQuery = `SELECT id, name, email FROM "user";`
+	getByIdQuery = `SELECT id, name, email FROM "user" WHERE id = $1;`
+)
 
 type User struct {
 	ID    int    `json:"id"`
@@ -66,7 +70,7 @@ func (handler *handler) Create(c echo.Context) error {
 
 func (handler *handler) GetAll(c echo.Context) error {
 	context := c.Request().Context()
-	rows, err := handler.db.QueryContext(context, `SELECT id, name, email FROM "user"`)
+	rows, err := handler.db.QueryContext(context, getAllUsersQuery)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -80,4 +84,19 @@ func (handler *handler) GetAll(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, users)
+}
+
+func (handler *handler) GetById(c echo.Context) error {
+	context := c.Request().Context()
+	userId := c.Param("id")
+	var user User
+	err := handler.db.QueryRowContext(context, getByIdQuery, userId).Scan(&user.ID, &user.Name, &user.Email)
+
+	if err == sql.ErrNoRows {
+		return c.JSON(http.StatusNotFound, "")
+	} else if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, user)
 }
