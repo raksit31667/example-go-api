@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16
+    user: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
