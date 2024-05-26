@@ -15,7 +15,6 @@ func RegisterRoutes(e *echo.Echo, db *sql.DB) {
 
 	userHandler := user.NewHandler(db)
 
-	e.POST("/users", func(c echo.Context) error {
-		return userHandler.Create(c)
-	})
+	e.POST("/users", userHandler.Create)
+	e.GET("/users", userHandler.GetAll)
 }
