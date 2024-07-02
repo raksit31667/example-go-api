@@ -70,6 +70,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Git SHA
+        run: echo "GIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Configure Git robot
         run: |
           git --version
