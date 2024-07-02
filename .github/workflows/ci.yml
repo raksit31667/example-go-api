@@ -81,8 +81,8 @@ jobs:
 
       - name: Change Docker image tag to deploy
         run: |
-          sed -i -E "s/ghcr.io\/raksit31667\/example-go-api.*$/ghcr.io\/raksit31667\/example-go-api:${GITHUB_SHA}/" infrastructure/gitops/deployment.yml
+          sed -i -E "s/ghcr.io\/raksit31667\/example-go-api.*$/ghcr.io\/raksit31667\/example-go-api:${{ env.GIT_SHA }}/" infrastructure/gitops/deployment.yml
           git add infrastructure/gitops/deployment.yml
-          git commit -m "[skip actions] 🤖 change Docker image version to ${GITHUB_SHA}"
+          git commit -m "[skip actions] 🤖 change Docker image version to ${{ env.GIT_SHA }}"
           git pull --rebase
           git push
