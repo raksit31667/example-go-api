@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: example-go-api
+spec:
+  selector:
+    matchLabels:
+      app: api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      imagePullSecrets:
+        - name: secret-docker
+      containers:
+      - name: gopher-api
+        image: ghcr.io/raksit31667/example-go-api:d1f25539219913efd1e9ab49e96c0b03c09a3da9
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 1323
+        envFrom:
+          - configMapRef:
+              name: app-env-config
+          - secretRef:
+              name: secret-config
+        resources:
+          limits:
+            cpu: 100m
+            memory: 256Mi
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 1323
+          initialDelaySeconds: 3
+          periodSeconds: 60
